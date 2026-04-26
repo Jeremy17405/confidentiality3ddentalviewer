@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="3D Dental Viewer — Outil de visualisation 3D pour professionnels dentaires. 3D visualization tool for dental professionals." />
+  <title>3D Dental Viewer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:   #1b3a5c;
+      --blue:   #2471a3;
+      --teal:   #1a8fa0;
+      --light:  #f4f7fa;
+      --white:  #ffffff;
+      --text:   #1e2d3d;
+      --muted:  #5a7185;
+      --border: #dde4ec;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--light);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    /* ── Language toggle ── */
+    .lang-bar {
+      background: var(--navy);
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      padding: 0.5rem 2rem;
+      gap: 0.25rem;
+    }
+    .lang-btn {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.35);
+      color: rgba(255,255,255,0.7);
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      padding: 0.25rem 0.7rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .lang-btn.active,
+    .lang-btn:hover {
+      background: rgba(255,255,255,0.15);
+      color: #fff;
+      border-color: rgba(255,255,255,0.6);
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--blue) 60%, var(--teal) 100%);
+      color: #fff;
+      text-align: center;
+      padding: 5rem 2rem 4rem;
+    }
+    .logo-icon {
+      width: 72px;
+      height: 72px;
+      background: rgba(255,255,255,0.15);
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.5rem;
+      font-size: 2.2rem;
+    }
+    header h1 {
+      font-size: 2.6rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.75rem;
+    }
+    header p.tagline {
+      font-size: 1.15rem;
+      opacity: 0.85;
+      max-width: 520px;
+      margin: 0 auto 2rem;
+      line-height: 1.55;
+    }
+    .store-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: #fff;
+      color: var(--navy);
+      font-size: 0.95rem;
+      font-weight: 700;
+      padding: 0.75rem 1.6rem;
+      border-radius: 10px;
+      text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+    }
+    .store-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(0,0,0,0.22); }
+    .store-btn svg { width: 22px; height: 22px; }
+
+    /* ── Main content ── */
+    main { max-width: 960px; margin: 0 auto; padding: 4rem 2rem; }
+
+    /* ── About ── */
+    .about {
+      background: var(--white);
+      border-radius: 14px;
+      padding: 2.5rem 3rem;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+      margin-bottom: 2.5rem;
+      border: 1px solid var(--border);
+    }
+    .about h2 {
+      color: var(--navy);
+      font-size: 1.4rem;
+      margin-bottom: 1rem;
+    }
+    .about p {
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.75;
+    }
+
+    /* ── Features grid ── */
+    .section-title {
+      text-align: center;
+      color: var(--navy);
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin-bottom: 2rem;
+    }
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 3rem;
+    }
+    .feature-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.75rem 1.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .feature-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.09); }
+    .feature-icon {
+      font-size: 2rem;
+      margin-bottom: 0.9rem;
+    }
+    .feature-card h3 {
+      color: var(--navy);
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .feature-card p {
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+
+    /* ── Privacy banner ── */
+    .privacy-banner {
+      background: linear-gradient(135deg, var(--teal), var(--blue));
+      color: #fff;
+      border-radius: 14px;
+      padding: 2rem 2.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      margin-bottom: 3rem;
+    }
+    .privacy-banner .shield { font-size: 2.8rem; flex-shrink: 0; }
+    .privacy-banner h3 { font-size: 1.1rem; margin-bottom: 0.35rem; }
+    .privacy-banner p { font-size: 0.9rem; opacity: 0.9; line-height: 1.55; }
+    .privacy-banner a { color: #fff; font-weight: 600; text-decoration: underline; }
+    .privacy-banner a:hover { opacity: 0.85; }
+
+    /* ── Developer ── */
+    .developer {
+      text-align: center;
+      padding: 1.5rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .developer strong { color: var(--navy); }
+
+    /* ── Footer ── */
+    footer {
+      background: var(--navy);
+      color: rgba(255,255,255,0.65);
+      text-align: center;
+      padding: 2rem 1rem;
+      font-size: 0.85rem;
+    }
+    footer a { color: rgba(255,255,255,0.85); text-decoration: none; border-bottom: 1px solid rgba(255,255,255,0.35); }
+    footer a:hover { color: #fff; }
+    footer .sep { margin: 0 0.75rem; }
+
+    @media (max-width: 640px) {
+      header h1 { font-size: 1.9rem; }
+      .about { padding: 1.75rem 1.5rem; }
+      .privacy-banner { flex-direction: column; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Language bar -->
+  <div class="lang-bar">
+    <button class="lang-btn active" onclick="setLang('fr')" id="btn-fr">FR</button>
+    <button class="lang-btn" onclick="setLang('en')" id="btn-en">EN</button>
+  </div>
+
+  <!-- Header -->
+  <header>
+    <div class="logo-icon" aria-hidden="true">🦷</div>
+    <h1>3D Dental Viewer</h1>
+
+    <p class="tagline" data-fr="L'outil de visualisation 3D pensé pour les professionnels dentaires."
+                       data-en="The 3D visualization tool designed for dental professionals.">
+      L'outil de visualisation 3D pensé pour les professionnels dentaires.
+    </p>
+
+    <a href="#" class="store-btn" aria-label="App Store">
+      <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+      </svg>
+      <span data-fr="Bientôt sur l'App Store" data-en="Coming soon on the App Store">Bientôt sur l'App Store</span>
+    </a>
+  </header>
+
+  <main>
+
+    <!-- About -->
+    <section class="about">
+      <h2 data-fr="À propos de l'application" data-en="About the app">À propos de l'application</h2>
+      <p data-fr="3D Dental Viewer est une application iOS conçue pour les chirurgiens-dentistes, prothésistes dentaires et techniciens de laboratoire. Elle permet de visualiser, explorer et analyser des fichiers de conception assistée par ordinateur (CAO) dentaires directement depuis votre iPhone ou iPad, sans connexion internet requise. Tout le traitement s'effectue entièrement en local, sur votre appareil."
+         data-en="3D Dental Viewer is an iOS application designed for dentists, dental prosthetists, and laboratory technicians. It lets you visualize, explore, and analyze dental CAD (computer-aided design) files directly from your iPhone or iPad — no internet connection required. All processing happens entirely on-device.">
+        3D Dental Viewer est une application iOS conçue pour les chirurgiens-dentistes, prothésistes dentaires et techniciens de laboratoire. Elle permet de visualiser, explorer et analyser des fichiers de conception assistée par ordinateur (CAO) dentaires directement depuis votre iPhone ou iPad, sans connexion internet requise. Tout le traitement s'effectue entièrement en local, sur votre appareil.
+      </p>
+    </section>
+
+    <!-- Features -->
+    <h2 class="section-title" data-fr="Fonctionnalités" data-en="Features">Fonctionnalités</h2>
+    <div class="features">
+
+      <div class="feature-card">
+        <div class="feature-icon">🔬</div>
+        <h3 data-fr="Visualisation 3D précise" data-en="Precise 3D Visualization">Visualisation 3D précise</h3>
+        <p data-fr="Faites pivoter, zoomez et explorez vos modèles dentaires dans toutes les dimensions avec une précision professionnelle."
+           data-en="Rotate, zoom, and explore your dental models in all dimensions with professional-grade precision.">
+          Faites pivoter, zoomez et explorez vos modèles dentaires dans toutes les dimensions avec une précision professionnelle.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">📂</div>
+        <h3 data-fr="Fichiers CAO dentaires" data-en="Dental CAD Files">Fichiers CAO dentaires</h3>
+        <p data-fr="Ouverture et lecture de fichiers de conception dentaire au format standard utilisés en laboratoire et en cabinet."
+           data-en="Open and read dental design files in standard formats used in laboratories and dental practices.">
+          Ouverture et lecture de fichiers de conception dentaire au format standard utilisés en laboratoire et en cabinet.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">📴</div>
+        <h3 data-fr="100 % hors ligne" data-en="100% Offline">100 % hors ligne</h3>
+        <p data-fr="Aucune connexion internet nécessaire. L'application fonctionne entièrement en local sur votre appareil."
+           data-en="No internet connection needed. The app runs entirely locally on your device.">
+          Aucune connexion internet nécessaire. L'application fonctionne entièrement en local sur votre appareil.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">📸</div>
+        <h3 data-fr="Captures d'écran" data-en="Screenshots">Captures d'écran</h3>
+        <p data-fr="Enregistrez vos vues dans la photothèque de votre appareil pour les partager avec vos équipes ou vos patients."
+           data-en="Save your views to your device's photo library to share with your team or patients.">
+          Enregistrez vos vues dans la photothèque de votre appareil pour les partager avec vos équipes ou vos patients.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🔒</div>
+        <h3 data-fr="Aucune donnée collectée" data-en="No Data Collected">Aucune donnée collectée</h3>
+        <p data-fr="Vos données restent sur votre appareil. L'application ne collecte, ne transmet ni ne stocke aucune information."
+           data-en="Your data stays on your device. The app does not collect, transmit, or store any information.">
+          Vos données restent sur votre appareil. L'application ne collecte, ne transmet ni ne stocke aucune information.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <h3 data-fr="Optimisé pour iOS" data-en="Optimized for iOS">Optimisé pour iOS</h3>
+        <p data-fr="Conçu pour iPhone et iPad, avec une interface fluide et intuitive adaptée à l'usage en cabinet ou laboratoire."
+           data-en="Designed for iPhone and iPad with a smooth, intuitive interface adapted for practice or laboratory use.">
+          Conçu pour iPhone et iPad, avec une interface fluide et intuitive adaptée à l'usage en cabinet ou laboratoire.
+        </p>
+      </div>
+
+    </div>
+
+    <!-- Privacy banner -->
+    <div class="privacy-banner">
+      <div class="shield" aria-hidden="true">🛡️</div>
+      <div>
+        <h3 data-fr="Votre vie privée est protégée" data-en="Your privacy is protected">Votre vie privée est protégée</h3>
+        <p data-fr="3D Dental Viewer ne collecte aucune donnée personnelle. Tout fonctionne en local sur votre appareil. Consultez notre <a href='privacy-policy.html'>politique de confidentialité</a> pour plus de détails."
+           data-en="3D Dental Viewer collects no personal data. Everything runs locally on your device. Read our <a href='privacy-policy.html'>privacy policy</a> for full details.">
+          3D Dental Viewer ne collecte aucune donnée personnelle. Tout fonctionne en local sur votre appareil. Consultez notre <a href="privacy-policy.html">politique de confidentialité</a> pour plus de détails.
+        </p>
+      </div>
+    </div>
+
+    <!-- Developer -->
+    <div class="developer">
+      <p data-fr="Développé par <strong>Jeremy Hassan</strong> · Pour toute question : <a href='mailto:jeremyhassan@gmail.com'>jeremyhassan@gmail.com</a>"
+         data-en="Developed by <strong>Jeremy Hassan</strong> · Questions: <a href='mailto:jeremyhassan@gmail.com'>jeremyhassan@gmail.com</a>">
+        Développé par <strong>Jeremy Hassan</strong> · Pour toute question : <a href="mailto:jeremyhassan@gmail.com">jeremyhassan@gmail.com</a>
+      </p>
+    </div>
+
+  </main>
+
+  <footer>
+    <p>
+      &copy; 2026 Jeremy Hassan &nbsp;<span class="sep">·</span>
+      <a href="privacy-policy.html" data-fr="Politique de confidentialité" data-en="Privacy Policy">Politique de confidentialité</a>
+      <span class="sep">·</span>
+      <a href="mailto:jeremyhassan@gmail.com">jeremyhassan@gmail.com</a>
+    </p>
+  </footer>
+
+  <script>
+    function setLang(lang) {
+      document.documentElement.lang = lang;
+      document.querySelectorAll('[data-fr][data-en]').forEach(function(el) {
+        el.innerHTML = el.getAttribute('data-' + lang);
+      });
+      document.getElementById('btn-fr').classList.toggle('active', lang === 'fr');
+      document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+    }
+    // Apply FR on load (already in HTML, no-op but ensures button state)
+    setLang('fr');
+  </script>
+</body>
+</html>
