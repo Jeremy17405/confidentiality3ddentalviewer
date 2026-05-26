@@ -6,33 +6,61 @@ const { sendMessage, isConnected } = require('./whatsapp')
 const logger = require('./logger')
 
 const CRON = process.env.REMINDER_CRON || '0 8 * * 0-5'
-const MESSAGE_TEMPLATE = process.env.REMINDER_MESSAGE ||
-  'שלום {prenom},\nתזכורת לתור שלך ב{clinique}\n📅 {date} בשעה {heure}\n\nלביטול נא ליצור קשר: {telephone}\nתודה! 🦷'
 
-function formatDate(isoString) {
-  const d = new Date(isoString)
-  const days = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת']
-  const dayName = days[d.getDay()]
-  const date = d.toLocaleDateString('he-IL', {
-    timeZone: 'Asia/Jerusalem',
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  })
-  return `יום ${dayName} ${date}`
+const HE_DAYS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת']
+const EN_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+const EN_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
+                   'July', 'August', 'September', 'October', 'November', 'December']
+
+function formatDateHebrew(d) {
+  const day = HE_DAYS[d.getDay()]
+  const dd = String(d.getDate()).padStart(2, '0')
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const yyyy = d.getFullYear()
+  return `יום ${day} ${dd}/${mm}/${yyyy}`
 }
 
-function formatTime(isoString) {
-  const d = new Date(isoString)
-  return d.toLocaleTimeString('he-IL', {
-    timeZone: 'Asia/Jerusalem',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false
-  })
+function formatDateEnglish(d) {
+  const day = EN_DAYS[d.getDay()]
+  const month = EN_MONTHS[d.getMonth()]
+  return `${day}, ${month} ${d.getDate()}, ${d.getFullYear()}`
 }
 
-// Détermine la date cible pour les rappels d'aujourd'hui
+function formatTime(d) {
+  const h = String(d.getHours()).padStart(2, '0')
+  const m = String(d.getMinutes()).padStart(2, '0')
+  return `${h}:${m}`
+}
+
+function toJerusalemDate(isoString) {
+  return new Date(new Date(isoString).toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' }))
+}
+
+function buildMessage(rappel) {
+  const d = toJerusalemDate(rappel.event_start)
+  const heDate = formatDateHebrew(d)
+  const enDate = formatDateEnglish(d)
+  const time = formatTime(d)
+
+  return [
+    'THE DENTIST | מרפאת שיניים',
+    '',
+    'שלום, אנו שמחים לאשר את תורך הבא במרפאה שלנו.',
+    `🗓️ ${heDate}`,
+    `⏰ בשעה ${time}`,
+    '',
+    'נבקש להודיע לנו על כל שינוי לפחות 24 שעות מראש. נשמח לראותך.',
+    '',
+    'Hello, we are pleased to confirm your upcoming appointment in our clinic.',
+    `🗓️ ${enDate}`,
+    `⏰ at ${time}`,
+    '',
+    'Kindly inform us at least 24 hours in advance for any changes. We look forward to welcoming you.',
+    '',
+    '📍 Waze: https://waze.com/ul/hsv9h9np0v'
+  ].join('\n')
+}
+
 // Vendredi → rappels pour dimanche (on saute samedi/Shabbat)
 // Sinon → rappels pour demain
 function getTargetDate() {
@@ -41,30 +69,9 @@ function getTargetDate() {
 
   const target = new Date(now)
   target.setHours(0, 0, 0, 0)
-
-  if (day === 5) {
-    // Vendredi → dimanche
-    target.setDate(target.getDate() + 2)
-  } else {
-    target.setDate(target.getDate() + 1)
-  }
+  target.setDate(target.getDate() + (day === 5 ? 2 : 1))
 
   return target.toISOString().split('T')[0] // YYYY-MM-DD
-}
-
-function buildMessage(rappel) {
-  const title = rappel.event_titre || ''
-  // Extraire prénom depuis le titre si possible
-  const parts = title.trim().split(/\s+/)
-  const prenom = parts[0] || ''
-
-  return MESSAGE_TEMPLATE
-    .replace('{prenom}', prenom)
-    .replace('{nom}', parts.slice(1).join(' ') || '')
-    .replace('{clinique}', process.env.CLINIC_NAME || 'המרפאה')
-    .replace('{date}', formatDate(rappel.event_start))
-    .replace('{heure}', formatTime(rappel.event_start))
-    .replace('{telephone}', process.env.CLINIC_PHONE || '')
 }
 
 async function sendReminders() {
