@@ -1,6 +1,7 @@
 'use strict'
 
 const express = require('express')
+const crypto = require('crypto')
 const { getAllPatients, searchPatients, upsertPatient, deletePatient, getRecentRappels, getRecentSyncLogs } = require('./database')
 const { invalidateIndex } = require('./matching')
 const { getAuthUrl, saveToken, isAuthenticated, pollAndEnrich } = require('./calendar')
@@ -10,6 +11,38 @@ const { isConnected } = require('./whatsapp')
 const logger = require('./logger')
 
 const PORT = parseInt(process.env.WEB_PORT || '3000')
+const WEB_SECRET = process.env.WEB_SECRET || ''
+
+// Sessions en mémoire : token → expiry timestamp
+const sessions = new Map()
+const SESSION_TTL = 7 * 24 * 60 * 60 * 1000 // 7 jours
+
+function createSession() {
+  const token = crypto.randomBytes(32).toString('hex')
+  sessions.set(token, Date.now() + SESSION_TTL)
+  return token
+}
+
+function isValidSession(token) {
+  if (!token) return false
+  const expiry = sessions.get(token)
+  if (!expiry) return false
+  if (Date.now() > expiry) { sessions.delete(token); return false }
+  return true
+}
+
+function getTokenFromReq(req) {
+  const cookie = req.headers.cookie || ''
+  const match = cookie.match(/(?:^|;\s*)session=([a-f0-9]+)/)
+  return match ? match[1] : null
+}
+
+function authMiddleware(req, res, next) {
+  // Routes publiques : login
+  if (req.path === '/login') return next()
+  if (!isValidSession(getTokenFromReq(req))) return res.redirect('/login')
+  next()
+}
 
 function html(title, body) {
   return `<!DOCTYPE html>
@@ -58,9 +91,44 @@ function html(title, body) {
   <a href="/patients/new">➕ מטופל חדש</a>
   <a href="/logs">📋 לוגים</a>
   <a href="/settings">⚙️ הגדרות</a>
-  <span class="brand">🦷 ${process.env.CLINIC_NAME || 'מרפאה'}</span>
+  <a href="/logout" style="margin-right:auto;opacity:.8">🔒 יציאה</a>
+  <span class="brand">🦷 THE DENTIST</span>
 </nav>
 <div class="container">${body}</div>
+</body></html>`
+}
+
+function loginPage(error = '') {
+  return `<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>כניסה — THE DENTIST</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #1a5276; min-height: 100vh;
+           display: flex; align-items: center; justify-content: center; }
+    .box { background: white; border-radius: 12px; padding: 36px; width: 100%; max-width: 360px; }
+    h1 { text-align: center; color: #1a5276; margin-bottom: 8px; font-size: 1.3em; }
+    p { text-align: center; color: #777; margin-bottom: 24px; font-size: .9em; }
+    input { width: 100%; padding: 10px 12px; border: 1px solid #ccc; border-radius: 6px;
+            font-size: 1em; margin-bottom: 14px; direction: ltr; }
+    button { width: 100%; padding: 11px; background: #1a5276; color: white;
+             border: none; border-radius: 6px; font-size: 1em; font-weight: 600; cursor: pointer; }
+    .err { color: #c0392b; text-align: center; margin-bottom: 12px; font-size: .9em; }
+  </style>
+</head>
+<body>
+<div class="box">
+  <h1>🦷 THE DENTIST</h1>
+  <p>מערכת ניהול תורים</p>
+  ${error ? `<p class="err">${error}</p>` : ''}
+  <form method="POST" action="/login">
+    <input type="password" name="password" placeholder="סיסמה" autofocus>
+    <button type="submit">כניסה</button>
+  </form>
+</div>
 </body></html>`
 }
 
@@ -68,6 +136,31 @@ function start() {
   const app = express()
   app.use(express.urlencoded({ extended: true }))
   app.use(express.json())
+
+  // ── Auth ──────────────────────────────────────────────────────────
+  app.use(authMiddleware)
+
+  app.get('/login', (req, res) => {
+    if (isValidSession(getTokenFromReq(req))) return res.redirect('/')
+    res.send(loginPage())
+  })
+
+  app.post('/login', (req, res) => {
+    if (!WEB_SECRET) return res.redirect('/')
+    if (req.body.password === WEB_SECRET) {
+      const token = createSession()
+      res.setHeader('Set-Cookie', `session=${token}; HttpOnly; Path=/; Max-Age=${SESSION_TTL / 1000}`)
+      return res.redirect('/')
+    }
+    res.send(loginPage('סיסמה שגויה — mot de passe incorrect'))
+  })
+
+  app.get('/logout', (req, res) => {
+    const token = getTokenFromReq(req)
+    if (token) sessions.delete(token)
+    res.setHeader('Set-Cookie', 'session=; HttpOnly; Path=/; Max-Age=0')
+    res.redirect('/login')
+  })
 
   // ── Dashboard ─────────────────────────────────────────────────────
   app.get('/', (req, res) => {
